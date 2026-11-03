@@ -18,10 +18,9 @@ export default function Welcome() {
     const { auth } = usePage<SharedData>().props || { auth: { user: null } };
     const { appearance, updateAppearance } = useAppearance();
 
-    // State for interactive features
     const [currentTime, setCurrentTime] = useState<string>('');
     const [currentUtc, setCurrentUtc] = useState<string>('');
-    const [activeTab, setActiveTab] = useState<'blueprint' | 'telemetry' | 'typography' | 'manifesto'>('blueprint');
+    const [activeTab, setActiveTab] = useState<'blueprint' | 'sample' | 'typography' | 'guide'>('blueprint');
     const [activeSpecIndex, setActiveSpecIndex] = useState<number>(0);
     const [gridOverlay, setGridOverlay] = useState<boolean>(false);
     const [email, setEmail] = useState<string>('');
@@ -183,21 +182,18 @@ const transitionCurve = {
                         </div>
                     </div>
                 </div>
-
-                {/* 2. MAIN HEADER NAVIGATION */}
                 <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/90 backdrop-blur-md dark:border-neutral-800 dark:bg-black/90">
                     <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-                        {/* Brand Logo */}
                         <div className="flex items-center gap-6">
                             <Link href="/" className="group flex items-center gap-2.5">
                                 <div className="flex h-8 w-8 items-center justify-center border border-black bg-black text-white transition-transform group-hover:scale-95 dark:border-white dark:bg-white dark:text-black">
-                                    <span className="font-mono text-sm font-black tracking-tighter">T·</span>
+                                    <span className="font-mono text-sm font-black tracking-tighter">M</span>
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="font-mono text-sm font-bold tracking-tight text-black uppercase dark:text-white">
-                                        TALK // ARCH
+                                        MergoKan
                                     </span>
-                                    <span className="font-mono text-[9px] tracking-widest text-neutral-500 uppercase">STUDIO 2026</span>
+                                    <span className="font-mono text-[9px] tracking-widest text-neutral-500 uppercase">DICTIONARY 2026</span>
                                 </div>
                             </Link>
 
@@ -226,7 +222,6 @@ const transitionCurve = {
                                 {appearance === 'dark' ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
                             </button>
 
-                            {/* Authentication / Access links */}
                             {auth?.user ? (
                                 <Link
                                     href={safeRoute('dashboard', '/dashboard')}
@@ -256,9 +251,7 @@ const transitionCurve = {
                     </div>
                 </header>
 
-                {/* 3. HERO SECTION */}
                 <section className="relative border-b border-neutral-200 px-4 py-20 sm:px-6 lg:px-8 lg:py-28 dark:border-neutral-800">
-                    {/* Corner Crosshairs */}
                     <div className="pointer-events-none absolute top-4 left-4 font-mono text-xs text-neutral-400 select-none dark:text-neutral-600">
                         +
                     </div>
@@ -273,8 +266,8 @@ const transitionCurve = {
                     </div>
 
                     <div className="mx-auto max-w-5xl">
-                        {/* Eyebrow Label */}
-                        <div className="mb-6 flex flex-wrap items-center gap-2">
+
+             <div className="mb-6 flex flex-wrap items-center gap-2">
                             <span className="inline-flex items-center gap-1.5 border border-neutral-300 bg-neutral-100 px-2.5 py-1 font-mono text-[10px] tracking-widest text-neutral-800 uppercase dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300">
                                 <Square className="h-2 w-2 fill-current" />
                                 Sample homepage ko for the translator for ibanag language preservation
@@ -283,13 +276,13 @@ const transitionCurve = {
                         </div>
 
                         <h1 className="mb-8 text-4xl font-normal tracking-tight text-neutral-950 sm:text-6xl md:text-7xl lg:leading-[1.08] dark:text-white">
-                            H1 title <br />
-                            <span className="font-semibold italic underline decoration-1 underline-offset-8">short description</span>
+                            MerGoKan <br />
+                            <span className="font-semibold italic underline decoration-1 underline-offset-8">Language Preservation</span>
                         </h1>
 
             
                         <p className="mb-10 max-w-2xl text-base leading-relaxed text-neutral-600 sm:text-lg dark:text-neutral-400">
-                           description about the translator, pwede ako maglagay ng mahaba (adjust ko if sobrang haba ng desc)
+                           Preserve Ibanag, Ilocano, and Itawit language, free to learn using your free time.
                         </p>
 
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -349,9 +342,8 @@ const transitionCurve = {
                                     </span>
                                 </div>
 
-                                {/* Tab Selector */}
                                 <div className="flex items-center gap-1 font-mono text-[11px]">
-                                    {(['blueprint', 'telemetry', 'typography', 'manifesto'] as const).map((tab) => (
+                                    {(['blueprint', 'sample', 'typography', 'guide'] as const).map((tab) => (
                                         <button
                                             key={tab}
                                             onClick={() => setActiveTab(tab)}
@@ -367,7 +359,6 @@ const transitionCurve = {
                                 </div>
                             </div>
 
-                            {/* Canvas Dynamic Content */}
                             <div className="p-6 md:p-8">
                                 {activeTab === 'blueprint' && (
                                     <div className="space-y-6">
@@ -585,7 +576,6 @@ const transitionCurve = {
                             </p>
                         </div>
 
-                        {/* Interactive Pill Selector for Principles */}
                         <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
                             {specModules.map((item, index) => (
                                 <div
