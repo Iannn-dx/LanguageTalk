@@ -16,6 +16,9 @@ return new class extends Migration
 
             $table->string('title');
             $table->string('author');
+
+            $table->string('publisher');
+            $table->string('publication_year');
             $table->timestamps();
         });
     }

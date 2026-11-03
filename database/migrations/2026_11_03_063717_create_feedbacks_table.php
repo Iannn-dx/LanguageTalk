@@ -13,6 +13,13 @@ return new class extends Migration
     {
         Schema::create('feedbacks', function (Blueprint $table) {
             $table->id();
+
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('translation_id')->constrained('translations')->cascadeOnDelete();
+
+            $table->string('comments');
+            $table->string('suggested_corrections');
+            $table->string('status');
             $table->timestamps();
         });
     }

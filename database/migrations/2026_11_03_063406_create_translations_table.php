@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('entry_id')->constrained('dictionary_entities')->cascadeOnDelete();
 
             $table->foreignId('source_language_id')->constrained('languages')->cascadeOnDelete();
-            $table->foreignId('target_source_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('target_source_id')->constrained('languages')->cascadeOnDelete();
 
             $table->string('translated_text');
             // $table->string('')

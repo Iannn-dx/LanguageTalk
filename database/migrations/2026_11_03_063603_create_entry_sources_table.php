@@ -13,6 +13,11 @@ return new class extends Migration
     {
         Schema::create('entry_sources', function (Blueprint $table) {
             $table->id();
+
+            $table->foreignId('entry_id')->constrained('dictionary_entities')->cascadeOnDelete();
+            $table->foreignId('source_id')->constrained('languages')->cascadeOnDelete();
+
+            // $table->
             $table->timestamps();
         });
     }

@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('entry_id')->constrained('dictionary_entities')->cascadeOnDelete();
-            $table->foreignId('location_id')->constrained('location')->cascadeOnDelete();
-            
+            $table->foreignId('location_id')->constrained('locations')->cascadeOnDelete();
+
             $table->timestamps();
         });
     }
