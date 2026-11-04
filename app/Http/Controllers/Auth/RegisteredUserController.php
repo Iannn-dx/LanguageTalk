@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\EmailOtpServices;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -28,24 +29,29 @@ class RegisteredUserController extends Controller
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, EmailOtpServices $otpService): RedirectResponse
     {
         $request->validate([
             'name' => 'required|string|max:255',
+            'role' => 'user',
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
         $user = User::create([
             'name' => $request->name,
-            'email' => $request->email,
             'role' => 'user',
+            'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
 
+        $request->session()->put('otp_user_id', $user->id);
+
+         $otpService->send($user);
+
         event(new Registered($user));
 
-        Auth::login($user);
+        // Auth::login($user);
 
         return to_route('dashboard');
     }

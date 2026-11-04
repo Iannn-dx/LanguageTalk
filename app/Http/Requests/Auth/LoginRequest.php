@@ -50,6 +50,14 @@ class LoginRequest extends FormRequest
         }
 
         RateLimiter::clear($this->throttleKey());
+
+        if(Auth::user()->email_verified_at === null) {
+            Auth::logout();
+
+            throw ValidationException::withMessages([
+                'email' => 'Please verify your email before logging in'
+            ]);
+        }
     }
 
     /**
