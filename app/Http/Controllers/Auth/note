@@ -1,7 +1,3 @@
-if (Auth::user()->email_verified_at === null) {
-    Auth::logout();
-
-    throw ValidationException::withMessages([
-        'email' => 'Please verify your email before logging in.',
-    ]);
-}
+Route::get('/dictionary', function () {
+    return Inertia::render('dictionary/index');
+})->name('dictionary');

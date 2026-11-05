@@ -147,7 +147,7 @@ const transitionCurve = {
                 }`}
                 style={{ fontFamily: "'Instrument Sans', -apple-system, BlinkMacSystemFont, sans-serif" }}
             >
-                {/* 1. TOP UTILITY TICKER */}
+
                 <div className="border-b border-neutral-200 bg-neutral-50 px-4 py-2 font-mono text-[11px] tracking-wider text-neutral-600 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400">
                     <div className="mx-auto flex max-w-7xl items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -198,21 +198,27 @@ const transitionCurve = {
                             </Link>
 
                             <nav className="hidden items-center gap-1 pl-6 md:flex">
-                                {['Home', 'Principles', 'Blueprint', 'Archive'].map((item) => (
-                                    <a
+                                {['Home', 'Principles', 'Blueprint', 'Archive', 'Dictionary'].map((item) => (
+                                    item === 'Dictionary' ? (
+                                        <Link key={item} href="/dictionary" className='rounded-sm px-3 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:text-black dark:text-neutral-400 dark:hover:text-white'>
+                                            {item}
+                                        </Link>
+                                    )
+                                    
+                                    : (
+                                        <a
                                         key={item}
                                         href={`#${item.toLowerCase()}`}
                                         className="rounded-sm px-3 py-1.5 text-xs font-medium tracking-wide text-neutral-600 transition-colors hover:text-black dark:text-neutral-400 dark:hover:text-white"
                                     >
                                         {item}
                                     </a>
+                                    )
                                 ))}
                             </nav>
                         </div>
 
-                        {/* Right Actions */}
                         <div className="flex items-center gap-2.5">
-                            {/* Theme Toggle */}
                             <button
                                 onClick={toggleTheme}
                                 className="flex h-8 w-8 items-center justify-center border border-neutral-300 transition-colors hover:border-black dark:border-neutral-700 dark:hover:border-white"

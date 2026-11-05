@@ -19,5 +19,9 @@ Route::middleware(['auth', 'role:user'])->group(function () {
     })->name('dashboard');
 });
 
+Route::get('/dictionary', function (){
+    return Inertia::render('Dictionary/index');
+})->name('dictionary');
+
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
