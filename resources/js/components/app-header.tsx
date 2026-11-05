@@ -34,6 +34,7 @@ const rightNavItems: NavItem[] = [
         url: 'https://laravel.com/docs/starter-kits',
         icon: BookOpen,
     },
+    
 ];
 
 const activeItemStyles = 'text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100';

@@ -26,8 +26,8 @@ class EmailOtpServices
             [
                 'otp_hash' => Hash::make($otp),
                 'expires_at' => now()->addMinutes(5),
-                'last_sent_at' =>now(),
-                'attempts => 0'
+                'last_sent_at' => now(),
+                'attempts' => 0,
             ]
         );
 

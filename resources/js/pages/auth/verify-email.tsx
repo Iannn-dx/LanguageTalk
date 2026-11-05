@@ -1,46 +1,13 @@
-// // Components
-// import { Head, useForm } from '@inertiajs/react';
-// import { LoaderCircle } from 'lucide-react';
-// import { FormEventHandler } from 'react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
+import { LoaderCircle } from 'lucide-react';
+import { FormEventHandler } from 'react';
 
-// import TextLink from '@/components/text-link';
-// import { Button } from '@/components/ui/button';
-// import AuthLayout from '@/layouts/auth-layout';
-
-// export default function VerifyEmail({ status }: { status?: string }) {
-//     const { post, processing } = useForm({});
-
-//     const submit: FormEventHandler = (e) => {
-//         e.preventDefault();
-
-//         post(route('verification.send'));
-//     };
-
-//     return (
-//         <AuthLayout title="Verify email" description="Please verify your email address by clicking on the link we just emailed to you.">
-//             <Head title="Email verification" />
-
-//             {status === 'verification-link-sent' && (
-//                 <div className="mb-4 text-center text-sm font-medium text-green-600">
-//                     A new verification link has been sent to the email address you provided during registration.
-//                 </div>
-//             )}
-
-//             <form onSubmit={submit} className="space-y-6 text-center">
-//                 <Button disabled={processing} variant="secondary">
-//                     {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
-//                     Resend verification email
-//                 </Button>
-
-//                 <TextLink href={route('logout')} method="post" className="mx-auto block text-sm">
-//                     Log out
-//                 </TextLink>
-//             </form>
-//         </AuthLayout>
-//     );
-// }
-
-import { useForm, router } from '@inertiajs/react';
+import InputError from '@/components/input-error';
+import TextLink from '@/components/text-link';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import AuthLayout from '@/layouts/auth-layout';
 
 interface Props {
     email: string;
@@ -51,100 +18,70 @@ export default function VerifyEmail({ email }: Props) {
         otp: '',
     });
 
-    const submit = (e: React.FormEvent) => {
+    const { flash } = usePage<{ flash?: { status?: string } }>().props;
+
+    const submit: FormEventHandler = (e) => {
         e.preventDefault();
 
-        post('/verify-email');
+        post(route('verification.verify'));
     };
 
     const resend = () => {
-        router.post('/verify-email/resend');
+        router.post(route('verification.resend'));
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <AuthLayout title="Verify your email" description={`We sent a 6-digit verification code to ${email}.`}>
+            <Head title="Email verification" />
 
-            <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
-
-                <div className="text-center mb-8">
-
-                    <div className="text-4xl mb-4">
-                        ✉️
-                    </div>
-
-                    <h1 className="text-2xl font-bold">
-                        Verify your email
-                    </h1>
-
-                    <p className="text-gray-500 mt-2">
-                        We sent a 6-digit verification code to
-                    </p>
-
-                    <p className="font-semibold mt-1">
-                        {email}
-                    </p>
-
+            {flash?.status && (
+                <div className="mb-4 text-center text-sm font-medium text-green-600">
+                    {flash.status}
                 </div>
+            )}
 
-                <form onSubmit={submit}>
+            <form onSubmit={submit} className="flex flex-col gap-6">
+                <div className="grid gap-2">
+                    <Label htmlFor="otp">Verification code</Label>
 
-                    <label className="block text-sm font-medium mb-2">
-                        Verification code
-                    </label>
-
-                    <input
+                    <Input
+                        id="otp"
                         type="text"
                         inputMode="numeric"
                         autoComplete="one-time-code"
                         maxLength={6}
+                        autoFocus
                         value={data.otp}
-                        onChange={(e) =>
-                            setData('otp', e.target.value.replace(/\D/g, ''))
-                        }
+                        onChange={(e) => setData('otp', e.target.value.replace(/\D/g, ''))}
                         placeholder="000000"
-                        className="w-full rounded-lg border px-4 py-3 text-center text-2xl tracking-[12px] focus:ring-2 focus:ring-blue-500 outline-none"
+                        disabled={processing}
+                        className="text-center text-2xl tracking-[12px]"
                     />
 
-                    {errors.otp && (
-                        <p className="text-red-500 text-sm mt-2">
-                            {errors.otp}
-                        </p>
-                    )}
-
-                    <button
-                        type="submit"
-                        disabled={processing || data.otp.length !== 6}
-                        className="w-full mt-6 rounded-lg bg-blue-600 py-3 text-white font-semibold hover:bg-blue-700 disabled:opacity-50"
-                    >
-                        {processing ? 'Verifying...' : 'Verify email'}
-                    </button>
-
-                </form>
-
-                <div className="text-center mt-6">
-
-                    <p className="text-sm text-gray-500 mb-3">
-                        Didn't receive your code?
-                    </p>
-
-                    <button
-                        type="button"
-                        onClick={resend}
-                        className="text-blue-600 font-semibold hover:underline"
-                    >
-                        Resend verification code
-                    </button>
-
+                    <InputError message={errors.otp} className="mt-2" />
                 </div>
 
-                <div className="text-center mt-6">
-                    <p className="text-xs text-gray-400">
-                        Your verification code expires after 5 minutes.
-                    </p>
-                </div>
+                <Button type="submit" className="w-full" disabled={processing || data.otp.length !== 6}>
+                    {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
+                    Verify email
+                </Button>
+            </form>
 
+            <div className="text-muted-foreground mt-6 space-y-3 text-center text-sm">
+                <p>Didn't receive your code?</p>
+
+                <Button type="button" variant="secondary" onClick={resend} disabled={processing}>
+                    Resend verification code
+                </Button>
+
+                <p className="text-xs">
+                    The code expires after 5 minutes.
+                </p>
+
+                <TextLink href={route('login')} className="block text-sm">
+                    Back to log in
+                </TextLink>
             </div>
-
-        </div>
+        </AuthLayout>
     );
 }

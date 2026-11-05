@@ -13,6 +13,11 @@ const mainNavItems: NavItem[] = [
         url: '/dashboard',
         icon: LayoutGrid,
     },
+    {
+        title: 'Import Dictionary',
+        url: '/import_dictionary',
+        icon: BookOpen,
+    }
 ];
 
 const footerNavItems: NavItem[] = [
@@ -25,6 +30,11 @@ const footerNavItems: NavItem[] = [
         title: 'Documentation',
         url: 'https://laravel.com/docs/starter-kits',
         icon: BookOpen,
+    },
+        {
+        title: 'Import Dictionary',
+        url: 'https://laravel.com/docs/starter-kits',
+        icon: Folder,
     },
 ];
 

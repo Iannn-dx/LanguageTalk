@@ -1,3 +1,10 @@
-Route::get('/dictionary', function () {
-    return Inertia::render('dictionary/index');
-})->name('dictionary');
+Route::get('/verify-email', [EmailOtpController::class, 'create'])
+    ->name('verification.notice');
+
+Route::post('/verify-email', [EmailOtpController::class, 'verify'])
+    ->name('verification.verify');
+
+Route::post('/verify-email/resend', [EmailOtpController::class, 'resend'])
+    ->name('verification.resend');
+
+    

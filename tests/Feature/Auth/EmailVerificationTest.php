@@ -2,57 +2,119 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Mail\EmailOtpMail;
+use App\Models\EmailOtp;
 use App\Models\User;
-use Illuminate\Auth\Events\Verified;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class EmailVerificationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_email_verification_screen_can_be_rendered()
+    public function test_registration_redirects_to_the_verification_screen(): void
     {
-        $user = User::factory()->unverified()->create();
+        Mail::fake();
 
-        $response = $this->actingAs($user)->get('/verify-email');
+        $response = $this->post('/register', [
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
 
-        $response->assertStatus(200);
+        $response->assertRedirect(route('verification.notice'));
+        $response->assertSessionHas('otp_user_id');
+
+        $user = User::where('email', 'test@example.com')->firstOrFail();
+
+        $this->assertGuest();
+        $this->assertNull($user->email_verified_at);
+        $this->assertDatabaseHas('email_otps', ['user_id' => $user->id]);
+
+        Mail::assertSent(EmailOtpMail::class);
     }
 
-    public function test_email_can_be_verified()
+    public function test_email_verification_screen_can_be_rendered(): void
     {
         $user = User::factory()->unverified()->create();
 
-        Event::fake();
+        $response = $this
+            ->withSession(['otp_user_id' => $user->id])
+            ->get('/verify-email');
 
-        $verificationUrl = URL::temporarySignedRoute(
-            'verification.verify',
-            now()->addMinutes(60),
-            ['id' => $user->id, 'hash' => sha1($user->email)]
-        );
-
-        $response = $this->actingAs($user)->get($verificationUrl);
-
-        Event::assertDispatched(Verified::class);
-        $this->assertTrue($user->fresh()->hasVerifiedEmail());
-        $response->assertRedirect(route('dashboard', absolute: false).'?verified=1');
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('auth/verify-email')
+            ->where('email', $user->email));
     }
 
-    public function test_email_is_not_verified_with_invalid_hash()
+    public function test_email_can_be_verified_with_a_valid_otp(): void
     {
         $user = User::factory()->unverified()->create();
 
-        $verificationUrl = URL::temporarySignedRoute(
-            'verification.verify',
-            now()->addMinutes(60),
-            ['id' => $user->id, 'hash' => sha1('wrong-email')]
-        );
+        EmailOtp::create([
+            'user_id' => $user->id,
+            'otp_hash' => Hash::make('123456'),
+            'expires_at' => now()->addMinutes(5),
+            'last_sent_at' => now(),
+        ]);
 
-        $this->actingAs($user)->get($verificationUrl);
+        $response = $this
+            ->withSession(['otp_user_id' => $user->id])
+            ->post('/verify-email', ['otp' => '123456']);
 
-        $this->assertFalse($user->fresh()->hasVerifiedEmail());
+        $response->assertRedirect(route('dashboard'));
+        $response->assertSessionMissing('otp_user_id');
+
+        $this->assertAuthenticatedAs($user);
+        $this->assertNotNull($user->fresh()->email_verified_at);
+        $this->assertDatabaseMissing('email_otps', ['user_id' => $user->id]);
+    }
+
+    public function test_email_is_not_verified_with_an_invalid_otp(): void
+    {
+        $user = User::factory()->unverified()->create();
+
+        EmailOtp::create([
+            'user_id' => $user->id,
+            'otp_hash' => Hash::make('123456'),
+            'expires_at' => now()->addMinutes(5),
+            'last_sent_at' => now(),
+        ]);
+
+        $response = $this
+            ->withSession(['otp_user_id' => $user->id])
+            ->post('/verify-email', ['otp' => '654321']);
+
+        $response->assertSessionHasErrors('otp');
+
+        $this->assertGuest();
+        $this->assertNull($user->fresh()->email_verified_at);
+        $this->assertDatabaseHas('email_otps', ['user_id' => $user->id, 'attempts' => 1]);
+    }
+
+    public function test_expired_otp_cannot_be_used(): void
+    {
+        $user = User::factory()->unverified()->create();
+
+        EmailOtp::create([
+            'user_id' => $user->id,
+            'otp_hash' => Hash::make('123456'),
+            'expires_at' => now()->subMinute(),
+            'last_sent_at' => now()->subMinutes(6),
+        ]);
+
+        $response = $this
+            ->withSession(['otp_user_id' => $user->id])
+            ->post('/verify-email', ['otp' => '123456']);
+
+        $response->assertSessionHasErrors('otp');
+
+        $this->assertGuest();
+        $this->assertNull($user->fresh()->email_verified_at);
+        $this->assertDatabaseMissing('email_otps', ['user_id' => $user->id]);
     }
 }

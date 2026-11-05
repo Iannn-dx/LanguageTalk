@@ -36,7 +36,7 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by($request->ip() .'|'. $request->session()->get('otp_user_id'));
         });
 
-        RateLimiter::for('resend', function(Request $request){
+        RateLimiter::for('otp-resend', function(Request $request){
             return Limit::perMinute(2)->by($request->ip() .'|'. $request->session()->get('otp_user_id', 'guest'));
         });
     }
