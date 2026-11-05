@@ -2,23 +2,10 @@ import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
-import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid } from 'lucide-react';
+import { type NavItem, type SharedData } from '@/types';
+import { Link, usePage } from '@inertiajs/react';
+import { BookOpen, FileUp, Folder, LayoutGrid } from 'lucide-react';
 import AppLogo from './app-logo';
-
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        url: '/dashboard',
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Import Dictionary',
-        url: '/import_dictionary',
-        icon: BookOpen,
-    }
-];
 
 const footerNavItems: NavItem[] = [
     {
@@ -31,21 +18,42 @@ const footerNavItems: NavItem[] = [
         url: 'https://laravel.com/docs/starter-kits',
         icon: BookOpen,
     },
-        {
-        title: 'Import Dictionary',
-        url: 'https://laravel.com/docs/starter-kits',
-        icon: Folder,
-    },
 ];
 
 export function AppSidebar() {
+    const { auth } = usePage<SharedData>().props;
+    const isAdmin = auth.user?.role === 'admin';
+    const dashboardUrl = isAdmin ? '/admin/dashboard' : '/dashboard';
+
+    const mainNavItems: NavItem[] = [
+        {
+            title: isAdmin ? 'Admin Dashboard' : 'Dashboard',
+            url: dashboardUrl,
+            icon: LayoutGrid,
+        },
+        ...(isAdmin
+            ? [
+                  {
+                      title: 'Dictionary',
+                      url: '/dictionary',
+                      icon: BookOpen,
+                  },
+                //   {
+                //       title: 'Import Dictionary',
+                //       url: '/import_dictionary',
+                //       icon: FileUp,
+                //   },
+              ]
+            : []),
+    ];
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <Link href="/dashboard" prefetch>
+                            <Link href={dashboardUrl} prefetch>
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>

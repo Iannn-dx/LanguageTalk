@@ -13,11 +13,14 @@ class RoleMiddleware
      *
      * @param  Closure(Request): (Response)  $next
      */
-    public function handle(Request $request, Closure $next, String $role): Response
+    public function handle(Request $request, Closure $next, string ...$roles): Response
     {
-        if(!$request->user() || $request->user()->role !== $role){
-            abort(403, "Unauthorize access");
+        $user = $request->user();
+
+        if (! $user || ! in_array($user->role, $roles, true)) {
+            abort(403, 'Unauthorized access');
         }
+
         return $next($request);
     }
 }

@@ -78,7 +78,10 @@ class EmailOtpController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return to_route('dashboard');
+        return match($user->role){
+            'admin' => to_route('admin.dashboard'),
+            default => to_route('dashboard'),
+        };
     }
 
     public function resend(Request $request, EmailOtpServices $otpService): RedirectResponse
