@@ -57,7 +57,7 @@ export default function CreateLanguageModal({ open, onOpenChange }: CreateLangua
                         name="name"
                         value={data.name}
                         onChange={(event) => setData('name', event.target.value)}
-                        placeholder="e.g. Yoruba"
+                        placeholder="e.g. Ibanag"
                         autoComplete="off"
                         autoFocus
                         required
@@ -72,7 +72,7 @@ export default function CreateLanguageModal({ open, onOpenChange }: CreateLangua
                         name="code"
                         value={data.code}
                         onChange={(event) => setData('code', event.target.value)}
-                        placeholder="e.g. yor, ibg, itw"
+                        placeholder="e.g. ibg, itw, ilk"
                         autoComplete="off"
                         required
                     />
