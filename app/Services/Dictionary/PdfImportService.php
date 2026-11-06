@@ -28,7 +28,8 @@ final class PdfImportService
      *         page: int
      *     }>,
      *     truncated: bool,
-     *     parser: string
+     *     parser: string,
+     *     metadata: array<string, mixed>
      * }
      */
     public function parseFile(string $path, int $maxEntries = IbanagDictionaryParser::DEFAULT_MAX_ENTRIES): array
@@ -48,6 +49,7 @@ final class PdfImportService
             'entries' => $parsed['entries'],
             'truncated' => $parsed['truncated'],
             'parser' => IbanagDictionaryParser::PARSER_NAME,
+            'metadata' => $extracted['metadata'],
         ];
     }
 }

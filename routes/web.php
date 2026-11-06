@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\DictionaryImportController;
 use App\Http\Controllers\Admin\LanguageController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -23,6 +24,11 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
     Route::get('/languages', [LanguageController::class, 'index'])->name('languages.index');
     Route::post('/languages', [LanguageController::class, 'store'])->name('languages.store');
+
+    Route::post('/dictionary/imports', [DictionaryImportController::class, 'store'])->name('dictionary.imports.store');
+    Route::get('/dictionary/imports/{import}', [DictionaryImportController::class, 'show'])->name('dictionary.imports.show');
+    Route::post('/dictionary/imports/{import}/confirm', [DictionaryImportController::class, 'confirm'])->name('dictionary.imports.confirm');
+    Route::delete('/dictionary/imports/{import}', [DictionaryImportController::class, 'destroy'])->name('dictionary.imports.destroy');
 });
 
 Route::middleware(['auth', 'role:user'])->group(function () {

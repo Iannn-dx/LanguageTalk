@@ -12,7 +12,7 @@ final class PdfTextExtractor
     /**
      * Extract normalized text from a PDF, keeping per-page text for provenance.
      *
-     * @return array{text: string, pageTexts: list<string>, pages: int}
+     * @return array{text: string, pageTexts: list<string>, pages: int, metadata: array<string, mixed>}
      */
     public function extract(string $path): array
     {
@@ -22,6 +22,7 @@ final class PdfTextExtractor
 
         try {
             $pdf = (new Parser)->parseFile($path);
+            $details = $pdf->getDetails();
 
             $pageTexts = [];
             foreach ($pdf->getPages() as $page) {
@@ -41,6 +42,7 @@ final class PdfTextExtractor
             'text' => $text,
             'pageTexts' => $pageTexts,
             'pages' => count($pageTexts),
+            'metadata' => is_array($details) ? $details : [],
         ];
     }
 
