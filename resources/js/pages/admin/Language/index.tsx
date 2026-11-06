@@ -93,7 +93,7 @@ export default function LanguageIndex({ languages }: { languages: Paginated<Lang
                                             </span>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant="outline" className="font-mono uppercase">
+                                            <Badge variant="outline" className="font-mono">
                                                 {language.code}
                                             </Badge>
                                         </TableCell>
