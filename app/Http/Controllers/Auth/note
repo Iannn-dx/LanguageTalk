@@ -1,22 +1,22 @@
-import { useState } from 'react';
-import CreateLanguageModal from '@/components/admin/languages/CreateLanguageModal';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import {
+  Field,
+  FieldDescription,
+  FieldLabel,
+} from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
 
-export default function LanguageIndex() {
-    const [open, setOpen] = useState(false);
-
-    return (
-        <>
-            <Button onClick={() => setOpen(true)}>
-                <Plus className="mr-2 size-4" />
-                Add Language
-            </Button>
-
-            <CreateLanguageModal
-                open={open}
-                onOpenChange={setOpen}
-            />
-        </>
-    );
+export function InputField() {
+  return (
+    <Field>
+      <FieldLabel htmlFor="input-field-username">Username</FieldLabel>
+      <Input
+        id="input-field-username"
+        type="text"
+        placeholder="Enter your username"
+      />
+      <FieldDescription>
+        Choose a unique username for your account.
+      </FieldDescription>
+    </Field>
+  )
 }

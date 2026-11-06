@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Language extends Model
 {
-    /** @use HasFactory<\Database\Factories\LanguageFactory> */
+    /** @use HasFactory<\Database\Factories\Admin\LanguageFactory> */
     use HasFactory;
 
     /**

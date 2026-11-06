@@ -1,6 +1,11 @@
-import { Button, Input } from '@headlessui/react';
 import { useForm } from '@inertiajs/react';
-import { Label } from '@radix-ui/react-dropdown-menu';
+import { type FormEventHandler } from 'react';
+
+import InputError from '@/components/input-error';
+import { Button } from '@/components/ui/button';
+import { DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import LanguageModal from './languageModal';
 
 interface CreateLanguageModalProps {
@@ -8,58 +13,81 @@ interface CreateLanguageModalProps {
     onOpenChange: (open: boolean) => void;
 }
 
-export default function CreateLanguageModa({ open, onOpenChange }: CreateLanguageModalProps) {
-    const form = useForm({
+export default function CreateLanguageModal({ open, onOpenChange }: CreateLanguageModalProps) {
+    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
         name: '',
         code: '',
     });
 
-    const submit = (e: React.FormEvent) => {
-        e.preventDefault();
+    const close = () => {
+        reset();
+        clearErrors();
+        onOpenChange(false);
+    };
 
-        form.post(route('admin/languages/store'), {
-            onSuccess: () => {
-                form.reset();
-                onOpenChange(false);
-            },
+    const handleOpenChange = (nextOpen: boolean) => {
+        // Don't let the dialog close while the request is in flight.
+        if (!nextOpen && processing) {
+            return;
+        }
+
+        if (nextOpen) {
+            onOpenChange(true);
+        } else {
+            close();
+        }
+    };
+
+    const submit: FormEventHandler = (event) => {
+        event.preventDefault();
+
+        post(route('languages.store'), {
+            preserveScroll: true,
+            onSuccess: close,
         });
     };
 
     return (
-        <LanguageModal open={open} onOpenChange={onOpenChange} title="Create Language">
+        <LanguageModal open={open} onOpenChange={handleOpenChange} title="Add language" description="Add a language to your dictionaries.">
             <form onSubmit={submit} className="space-y-4">
-                <div className="space-y-2">
-                    <Label>Language Name</Label>
+                <div className="grid gap-2">
+                    <Label htmlFor="language-name">Name</Label>
                     <Input
-                        id="name"
-                        value={form.data.name}
-                        onChange={(e) => form.setData('name', e.target.value)}
-                        placeholder="Enter Language name"
-                    ></Input>
-                    {form.errors.name && <p className="text-sm text-red-500">{form.errors.name}</p>}
+                        id="language-name"
+                        name="name"
+                        value={data.name}
+                        onChange={(event) => setData('name', event.target.value)}
+                        placeholder="e.g. Yoruba"
+                        autoComplete="off"
+                        autoFocus
+                        required
+                    />
+                    <InputError message={errors.name} />
                 </div>
 
-                <div className="space-y-2">
-                    <Label>Language Name</Label>
+                <div className="grid gap-2">
+                    <Label htmlFor="language-code">Code</Label>
                     <Input
-                        id="code"
-                        value={form.data.code}
-                        onChange={(e) => form.setData('code', e.target.value)}
-                        placeholder="e.g. ibg, itw, ilk"
-                    ></Input>
-                    {form.errors.code && <p className="text-sm text-red-500">{form.errors.code}</p>}
+                        id="language-code"
+                        name="code"
+                        value={data.code}
+                        onChange={(event) => setData('code', event.target.value)}
+                        placeholder="e.g. yor, ibg, itw"
+                        autoComplete="off"
+                        required
+                    />
+                    <p className="text-muted-foreground text-xs">A short ISO 639 code. It is saved in lowercase.</p>
+                    <InputError message={errors.code} />
                 </div>
 
-                {/*  */}
-                <div className="flex justify-end gap-2">
-                    <Button type="button" onClick={() => onOpenChange(false)} className="inline-flex w-fit max-sm:py-1.5 max-sm:px-2 max-sm:text-xs items-center gap-2 rounded-md bg-red-700 px-4 py-2 me-2 text-sm text-white transition-colors hover:bg-gray-900">
+                <DialogFooter className="gap-2 pt-2 sm:space-x-0">
+                    <Button type="button" variant="outline" onClick={close} disabled={processing}>
                         Cancel
                     </Button>
-
-                    <Button type="submit" disabled={form.processing} className="inline-flex w-fit max-sm:py-1.5 max-sm:px-2 max-sm:text-xs items-center gap-2 rounded-md bg-black px-4 py-2 me-2 text-sm text-white transition-colors hover:bg-gray-900">
-                        {form.processing ? 'Saving...' : 'Save Language'}
+                    <Button type="submit" disabled={processing}>
+                        {processing ? 'Saving…' : 'Save language'}
                     </Button>
-                </div>
+                </DialogFooter>
             </form>
         </LanguageModal>
     );

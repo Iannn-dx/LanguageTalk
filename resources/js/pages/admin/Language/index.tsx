@@ -1,17 +1,14 @@
-import { Head } from '@inertiajs/react';
-import { BookOpen } from 'lucide-react';
-import { Upload } from 'lucide-react';
-
+import { Head, usePage } from '@inertiajs/react';
+import { BookOpen, Plus, Trash, Pencil } from 'lucide-react';
 import { useState } from 'react';
-import CreateLanguageModa from '@/components/admin/languages/createLanguageModal';
-import { Button } from '@headlessui/react';
-import { Plus } from 'lucide-react';
 
+import CreateLanguageModal from '@/components/admin/languages/createLanguageModal';
 import { Pagination } from '@/components/pagination';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem, type Language, type Paginated } from '@/types';
+import { type BreadcrumbItem, type Language, type Paginated, type SharedData } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -20,8 +17,16 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function LanguageIndex({ languages }: { languages: Paginated<Language> }) {
+const dateFormatter = new Intl.DateTimeFormat('en', { dateStyle: 'medium' });
 
+function formatDate(value: string): string {
+    const date = new Date(value);
+
+    return Number.isNaN(date.getTime()) ? '—' : dateFormatter.format(date);
+}
+
+export default function LanguageIndex({ languages }: { languages: Paginated<Language> }) {
+    const { flash } = usePage<SharedData>().props;
     const [open, setOpen] = useState(false);
 
     return (
@@ -29,17 +34,31 @@ export default function LanguageIndex({ languages }: { languages: Paginated<Lang
             <Head title="Languages" />
 
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center"> 
-                        <div>
-                            <h1 className="flex items-center gap-2 text-2xl font-semibold">Languages</h1>
-                            <p className="text-muted-foreground text-sm">Languages used by your dictionaries.</p>
-                        </div>
-                        <button onClick={() => setOpen(true)} className='inline-flex w-fit max-sm:py-1.5 max-sm:px-2 max-sm:text-xs items-center gap-2 rounded-md bg-black px-4 py-2 me-2 text-sm text-white transition-colors hover:bg-gray-900'>
-                            <Upload className='size-4'></Upload>
-                            Add Language</button>
+                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                    <div>
+                        <h1 className="flex items-center gap-2 text-2xl font-semibold">Languages</h1>
+                        <p className="text-muted-foreground text-sm">Languages used by your dictionaries.</p>
+                    </div>
 
-                            <CreateLanguageModa open={open} onOpenChange={setOpen} ></CreateLanguageModa>
+                    <Button
+                        className="me-2 inline-flex w-fit items-center gap-2 rounded-md bg-black px-4 py-2 text-sm text-white transition-colors hover:bg-gray-900 max-sm:px-2 max-sm:py-1.5 max-sm:text-xs"
+                        onClick={() => setOpen(true)}
+                    >
+                        <Plus className="size-4" />
+                        Add language
+                    </Button>
                 </div>
+
+                {flash?.status && (
+                    <div
+                        role="status"
+                        className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700 dark:border-green-900/50 dark:bg-green-900/20 dark:text-green-300"
+                    >
+                        {flash.status}
+                    </div>
+                )}
+
+                <CreateLanguageModal open={open} onOpenChange={setOpen} />
 
                 <div className="border-sidebar-border/70 dark:border-sidebar-border bg-card overflow-hidden rounded-xl border">
                     <Table>
@@ -50,6 +69,7 @@ export default function LanguageIndex({ languages }: { languages: Paginated<Lang
                                 <TableHead>Code</TableHead>
                                 <TableHead className="text-right">Entries</TableHead>
                                 <TableHead className="hidden sm:table-cell">Created</TableHead>
+                                <TableHead className="">Action</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -80,7 +100,19 @@ export default function LanguageIndex({ languages }: { languages: Paginated<Lang
                                         <TableCell className="text-right tabular-nums">
                                             {language.dictionary_entities_count.toLocaleString()}
                                         </TableCell>
-                                        <TableCell className="text-muted-foreground hidden sm:table-cell"></TableCell>
+                                        <TableCell className="text-muted-foreground hidden sm:table-cell">
+                                            {formatDate(language.created_at)}
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-2">
+                                                <Button className="size-8 transition-colors" size="icon" variant="outline">
+                                                    <Pencil></Pencil>
+                                                </Button>
+                                                <Button className="size-8 bg-red-700 text-white transition-colors" size="icon" variant="outline">
+                                                    <Trash></Trash>
+                                                </Button>
+                                            </div>
+                                        </TableCell>
                                     </TableRow>
                                 ))
                             )}

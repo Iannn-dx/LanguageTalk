@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\DictionaryEntity;
-use App\Models\Language;
+use App\Models\Admin\DictionaryEntity;
+use App\Models\Admin\Language;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -86,5 +86,62 @@ class LanguageTest extends TestCase
                 ->where('languages.data.1.name', 'Zulu')
                 ->where('languages.data.1.id', $zulu->id)
                 ->where('languages.data.1.dictionary_entities_count', 0));
+    }
+
+    public function test_admins_can_create_a_language(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => 'admin']))
+            ->post('/languages', ['name' => '  Yoruba  ', 'code' => ' YOR '])
+            ->assertRedirect(route('languages.index'))
+            ->assertSessionHas('status', 'Language created successfully.');
+
+        $this->assertDatabaseHas('languages', [
+            'name' => 'Yoruba',
+            'code' => 'yor',
+        ]);
+    }
+
+    public function test_guests_cannot_create_languages(): void
+    {
+        $this->post('/languages', ['name' => 'Yoruba', 'code' => 'yor'])
+            ->assertRedirect('/login');
+    }
+
+    public function test_non_admin_users_cannot_create_languages(): void
+    {
+        $this->actingAs(User::factory()->create())
+            ->post('/languages', ['name' => 'Yoruba', 'code' => 'yor'])
+            ->assertForbidden();
+    }
+
+    public function test_language_creation_requires_a_name_and_code(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => 'admin']))
+            ->from('/languages')
+            ->post('/languages', [])
+            ->assertRedirect('/languages')
+            ->assertSessionHasErrors(['name', 'code']);
+    }
+
+    public function test_language_name_and_code_must_be_unique(): void
+    {
+        Language::factory()->create(['name' => 'Yoruba', 'code' => 'yor']);
+
+        $this->actingAs(User::factory()->create(['role' => 'admin']))
+            ->from('/languages')
+            ->post('/languages', ['name' => 'Yoruba', 'code' => 'YOR'])
+            ->assertRedirect('/languages')
+            ->assertSessionHasErrors(['name', 'code']);
+
+        $this->assertDatabaseCount('languages', 1);
+    }
+
+    public function test_language_code_must_only_contain_letters_numbers_dashes_and_underscores(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => 'admin']))
+            ->from('/languages')
+            ->post('/languages', ['name' => 'Yoruba', 'code' => 'not a code'])
+            ->assertRedirect('/languages')
+            ->assertSessionHasErrors('code');
     }
 }

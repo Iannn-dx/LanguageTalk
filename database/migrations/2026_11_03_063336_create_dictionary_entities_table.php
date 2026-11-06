@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('language_id')->constrained('languages')->cascadeOnDelete();
             $table->string('word');
 
-            $table->string('definition');
+            $table->text('definition');
             $table->string('part_of_speech');
 
             $table->timestamps();
