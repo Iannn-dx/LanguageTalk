@@ -19,6 +19,11 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/import_dictionary', function () {
         return Inertia::render('import_dictionary');
     })->name('import_dictionary');
+
+    Route::get('/language', function () {
+        return Inertia::render('admin/Language/index');
+    })->name('language');
+
 });
 
 Route::middleware(['auth', 'role:user'])->group(function () {

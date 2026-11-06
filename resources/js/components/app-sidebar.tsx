@@ -38,11 +38,11 @@ export function AppSidebar() {
                       url: '/dictionary',
                       icon: BookOpen,
                   },
-                //   {
-                //       title: 'Import Dictionary',
-                //       url: '/import_dictionary',
-                //       icon: FileUp,
-                //   },
+                  {
+                      title: 'Language',
+                      url: '/language',
+                      icon: FileUp,
+                  },
               ]
             : []),
     ];
