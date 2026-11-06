@@ -39,8 +39,8 @@ export function AppSidebar() {
                       icon: BookOpen,
                   },
                   {
-                      title: 'Language',
-                      url: '/language',
+                      title: 'Languages',
+                      url: '/languages',
                       icon: FileUp,
                   },
               ]

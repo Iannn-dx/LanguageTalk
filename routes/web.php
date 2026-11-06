@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\LanguageController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -20,10 +21,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         return Inertia::render('import_dictionary');
     })->name('import_dictionary');
 
-    Route::get('/language', function () {
-        return Inertia::render('admin/Language/index');
-    })->name('language');
-
+    Route::get('/languages', [LanguageController::class, 'index'])->name('languages.index');
 });
 
 Route::middleware(['auth', 'role:user'])->group(function () {

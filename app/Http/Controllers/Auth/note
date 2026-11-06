@@ -1,10 +1,1 @@
-Route::get('/verify-email', [EmailOtpController::class, 'create'])
-    ->name('verification.notice');
-
-Route::post('/verify-email', [EmailOtpController::class, 'verify'])
-    ->name('verification.verify');
-
-Route::post('/verify-email/resend', [EmailOtpController::class, 'resend'])
-    ->name('verification.resend');
-
-    
+Route::get('/language', [LanguageController::class, 'index'])->name('language');
