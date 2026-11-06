@@ -22,6 +22,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     })->name('import_dictionary');
 
     Route::get('/languages', [LanguageController::class, 'index'])->name('languages.index');
+    Route::post('/languages', [LanguageController::class, 'store'])->name('languages.store');
 });
 
 Route::middleware(['auth', 'role:user'])->group(function () {

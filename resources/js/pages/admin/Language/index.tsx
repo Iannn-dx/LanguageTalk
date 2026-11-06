@@ -2,6 +2,11 @@ import { Head } from '@inertiajs/react';
 import { BookOpen } from 'lucide-react';
 import { Upload } from 'lucide-react';
 
+import { useState } from 'react';
+import CreateLanguageModa from '@/components/admin/languages/createLanguageModal';
+import { Button } from '@headlessui/react';
+import { Plus } from 'lucide-react';
+
 import { Pagination } from '@/components/pagination';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -16,6 +21,9 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function LanguageIndex({ languages }: { languages: Paginated<Language> }) {
+
+    const [open, setOpen] = useState(false);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Languages" />
@@ -26,9 +34,11 @@ export default function LanguageIndex({ languages }: { languages: Paginated<Lang
                             <h1 className="flex items-center gap-2 text-2xl font-semibold">Languages</h1>
                             <p className="text-muted-foreground text-sm">Languages used by your dictionaries.</p>
                         </div>
-                        <button className='inline-flex w-fit max-sm:py-1.5 max-sm:px-2 max-sm:text-xs items-center gap-2 rounded-md bg-black px-4 py-2 me-2 text-sm text-white transition-colors hover:bg-gray-900'>
+                        <button onClick={() => setOpen(true)} className='inline-flex w-fit max-sm:py-1.5 max-sm:px-2 max-sm:text-xs items-center gap-2 rounded-md bg-black px-4 py-2 me-2 text-sm text-white transition-colors hover:bg-gray-900'>
                             <Upload className='size-4'></Upload>
                             Add Language</button>
+
+                            <CreateLanguageModa open={open} onOpenChange={setOpen} ></CreateLanguageModa>
                 </div>
 
                 <div className="border-sidebar-border/70 dark:border-sidebar-border bg-card overflow-hidden rounded-xl border">
