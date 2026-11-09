@@ -5,19 +5,88 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreDictionaryImportRequest;
 use App\Jobs\ParseDictionaryPdfJob;
+use App\Models\Admin\DictionaryEntity;
 use App\Models\Admin\DictionaryImport;
 use App\Models\Admin\DictionaryImportRow;
+use App\Models\Admin\Language;
 use App\Models\Admin\Source;
+use App\Services\Dictionary\IbanagDictionaryParser;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
+use Inertia\Response;
 use Throwable;
 
 class DictionaryImportController extends Controller
 {
+    /**
+     * Render the dictionary dashboard with languages, entries, and recent imports.
+     */
+    public function index(Request $request): Response
+    {
+        $languages = Language::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'code']);
+
+        $search = mb_substr(trim((string) $request->query('search', '')), 0, 100);
+        $languageId = $request->filled('language_id') ? (int) $request->query('language_id') : null;
+
+        if ($languageId !== null && ! $languages->contains('id', $languageId)) {
+            $languageId = null;
+        }
+
+        $entries = DictionaryEntity::query()
+            ->with('language:id,name,code')
+            ->when($languageId !== null, fn ($query) => $query->where('language_id', $languageId))
+            ->when($search !== '', function ($query) use ($search): void {
+                $query->where('word_folded', 'like', '%'.IbanagDictionaryParser::fold($search).'%');
+            })
+            ->orderBy('word_folded')
+            ->orderBy('word')
+            ->orderBy('part_of_speech')
+            ->paginate(25)
+            ->withQueryString()
+            ->through(fn (DictionaryEntity $entry): array => [
+                'id' => $entry->id,
+                'word' => $entry->word,
+                'part_of_speech' => $entry->part_of_speech,
+                'definition' => $entry->definition,
+                'source_page' => $entry->source_page,
+                'language' => $entry->language === null ? null : [
+                    'id' => $entry->language->id,
+                    'name' => $entry->language->name,
+                    'code' => $entry->language->code,
+                ],
+            ]);
+
+        $imports = DictionaryImport::query()
+            ->with('language')
+            ->latest()
+            ->limit(10)
+            ->get()
+            ->map(fn (DictionaryImport $import): array => $this->importPayload($import))
+            ->all();
+
+        return Inertia::render('admin/Dictionary/index', [
+            'languages' => $languages,
+            'imports' => $imports,
+            'entries' => $entries,
+            'filters' => [
+                'search' => $search,
+                'language_id' => $languageId,
+            ],
+            'stats' => [
+                'languages' => $languages->count(),
+                'entries' => DictionaryEntity::query()->count(),
+                'imports' => DictionaryImport::query()->count(),
+            ],
+        ]);
+    }
+
     /**
      * Store an uploaded PDF and queue it for parsing.
      */
@@ -160,15 +229,17 @@ class DictionaryImportController extends Controller
     {
         $languageId = $import->language_id;
         $sourceId = $import->options['source_id'] ?? null;
+        $chunkSize = max(1, (int) config('dictionary.import_chunk_size', 500));
         $imported = 0;
         $skipped = 0;
+        $committed = [];
         $now = now();
 
         DictionaryImportRow::query()
             ->where('import_id', $import->id)
             ->where('status', DictionaryImportRow::STATUS_PENDING)
             ->orderBy('id')
-            ->chunkById(500, function ($rows) use ($import, $languageId, $sourceId, &$imported, &$skipped, $now): void {
+            ->chunkById($chunkSize, function ($rows) use ($import, $languageId, $sourceId, &$imported, &$skipped, &$committed, $now): void {
                 $folds = $rows->pluck('word_folded')->unique()->values()->all();
 
                 $existing = DB::table('dictionary_entities')
@@ -188,12 +259,14 @@ class DictionaryImportController extends Controller
                 foreach ($rows as $row) {
                     $key = $this->entryKey($row->word_folded, $row->part_of_speech);
 
-                    if (isset($existing[$key]) || isset($reserved[$key])) {
-                        if (isset($existing[$key])) {
-                            $existingIds[] = $row->id;
-                        } else {
-                            $repeatedIds[] = $row->id;
-                        }
+                    if (isset($committed[$key]) || isset($reserved[$key])) {
+                        $repeatedIds[] = $row->id;
+
+                        continue;
+                    }
+
+                    if (isset($existing[$key])) {
+                        $existingIds[] = $row->id;
 
                         continue;
                     }
@@ -284,6 +357,8 @@ class DictionaryImportController extends Controller
                             'updated_at' => $now,
                         ]);
                 }
+
+                $committed += $reserved;
 
                 $imported += count($importedIds);
                 $skipped += count($existingIds) + count($repeatedIds);
@@ -398,13 +473,26 @@ class DictionaryImportController extends Controller
             return 0;
         }
 
-        return DB::table('dictionary_import_rows as rows')
-            ->join('dictionary_entities as entries', function ($join) use ($import): void {
+        // Mirror confirm exactly: a staged row is skipped when its key already
+        // exists in the language or an earlier staged row used the same key.
+        $ranked = DB::table('dictionary_import_rows as rows')
+            ->leftJoin('dictionary_entities as entries', function ($join) use ($import): void {
                 $join->on('entries.word_folded', '=', 'rows.word_folded')
-                    ->on('entries.part_of_speech', '=', 'rows.part_of_speech')
+                    ->whereRaw("coalesce(entries.part_of_speech, '') = coalesce(rows.part_of_speech, '')")
                     ->where('entries.language_id', '=', $import->language_id);
             })
             ->where('rows.import_id', $import->id)
+            ->selectRaw(
+                'rows.id, entries.id as existing_id, '.
+                'row_number() over (partition by rows.word_folded, coalesce(rows.part_of_speech, \'\') order by rows.id) as row_rank'
+            );
+
+        return DB::query()
+            ->fromSub($ranked, 'ranked')
+            ->where(function ($query): void {
+                $query->whereNotNull('ranked.existing_id')
+                    ->orWhere('ranked.row_rank', '>', 1);
+            })
             ->count();
     }
 
@@ -415,7 +503,11 @@ class DictionaryImportController extends Controller
         }
 
         try {
-            Storage::disk($import->disk)->delete($import->path);
+            if (! Storage::disk($import->disk)->delete($import->path)) {
+                // Keep the path so the file can be cleaned up by a later discard.
+                return $import;
+            }
+
             $import->forceFill(['path' => null])->save();
         } catch (Throwable $e) {
             report($e);

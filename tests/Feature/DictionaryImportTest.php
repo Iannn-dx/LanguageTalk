@@ -15,6 +15,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class DictionaryImportTest extends TestCase
@@ -278,6 +279,11 @@ class DictionaryImportTest extends TestCase
         ]);
 
         $this->actingAs($this->admin())
+            ->getJson(route('dictionary.imports.show', $import))
+            ->assertOk()
+            ->assertJsonPath('preview.duplicate_count', 1);
+
+        $this->actingAs($this->admin())
             ->postJson(route('dictionary.imports.confirm', $import))
             ->assertOk()
             ->assertJsonPath('imported', 5)
@@ -291,6 +297,119 @@ class DictionaryImportTest extends TestCase
                 ->where('message', 'Duplicate entry within this import.')
                 ->count()
         );
+    }
+
+    public function test_confirm_detects_duplicates_across_chunks(): void
+    {
+        Storage::fake('local');
+        config(['dictionary.import_chunk_size' => 2]);
+
+        $import = $this->readyToParseImport();
+        $this->runParse($import);
+
+        DictionaryImportRow::query()->create([
+            'import_id' => $import->id,
+            'row_number' => 6,
+            'page' => 1,
+            'headword' => 'abaka',
+            'word_folded' => 'abaka',
+            'part_of_speech' => 'n',
+            'raw_part_of_speech' => 'n',
+            'definition' => 'a repeated entry in a later chunk.',
+            'status' => DictionaryImportRow::STATUS_PENDING,
+        ]);
+
+        $this->actingAs($this->admin())
+            ->postJson(route('dictionary.imports.confirm', $import))
+            ->assertOk()
+            ->assertJsonPath('imported', 5)
+            ->assertJsonPath('skipped', 1);
+
+        $this->assertDatabaseCount('dictionary_entities', 5);
+        $this->assertSame(
+            1,
+            DictionaryImportRow::query()
+                ->where('status', DictionaryImportRow::STATUS_SKIPPED)
+                ->where('message', 'Duplicate entry within this import.')
+                ->count()
+        );
+        $this->assertSame(
+            0,
+            DictionaryImportRow::query()
+                ->where('status', DictionaryImportRow::STATUS_SKIPPED)
+                ->where('message', 'Already exists in this language.')
+                ->count()
+        );
+    }
+
+    public function test_dictionary_page_lists_languages_and_recent_imports(): void
+    {
+        Storage::fake('local');
+
+        $import = $this->readyToParseImport();
+        $this->runParse($import);
+        $import->load('language');
+
+        $this->actingAs($this->admin())
+            ->get(route('dictionary'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('admin/Dictionary/index')
+                ->has('languages', 1)
+                ->where('languages.0.name', $import->language?->name)
+                ->has('imports', 1)
+                ->where('imports.0.id', $import->id)
+                ->where('imports.0.status', DictionaryImport::STATUS_READY)
+                ->where('imports.0.total_rows', 5)
+                ->where('imports.0.source.title', 'tiny dictionary')
+                ->where('stats.languages', 1)
+                ->where('stats.entries', 0)
+                ->where('stats.imports', 1)
+            );
+    }
+
+    public function test_scanned_pdfs_fail_with_no_extractable_text(): void
+    {
+        Storage::fake('local');
+
+        $import = $this->readyToParseImport('scanned-dictionary.pdf');
+        $path = $import->path;
+
+        try {
+            $this->runParse($import);
+            $this->fail('The parse job should have thrown for a scanned PDF.');
+        } catch (\RuntimeException) {
+            // Expected: the job records the failure and rethrows for the queue.
+        }
+
+        $import->refresh();
+
+        $this->assertSame(DictionaryImport::STATUS_FAILED, $import->status);
+        $this->assertStringContainsString('No extractable text', $import->error_message);
+        $this->assertSame($path, $import->path);
+        Storage::disk('local')->assertExists($path);
+        $this->assertDatabaseCount('dictionary_import_rows', 0);
+    }
+
+    public function test_pdfs_without_parseable_entries_fail_with_a_clear_message(): void
+    {
+        Storage::fake('local');
+
+        $import = $this->readyToParseImport('unstructured-dictionary.pdf');
+
+        try {
+            $this->runParse($import);
+            $this->fail('The parse job should have thrown when no entries were found.');
+        } catch (\RuntimeException) {
+            // Expected: the job records the failure and rethrows for the queue.
+        }
+
+        $import->refresh();
+
+        $this->assertSame(DictionaryImport::STATUS_FAILED, $import->status);
+        $this->assertStringContainsString('No dictionary entries could be extracted', $import->error_message);
+        $this->assertNotNull($import->path);
+        $this->assertDatabaseCount('dictionary_import_rows', 0);
     }
 
     public function test_job_marks_the_import_failed_and_keeps_the_pdf_when_parsing_fails(): void
@@ -332,24 +451,24 @@ class DictionaryImportTest extends TestCase
         );
     }
 
-    private function readyToParseImport(): DictionaryImport
+    private function readyToParseImport(string $fixture = 'tiny-dictionary.pdf'): DictionaryImport
     {
         $language = Language::factory()->create();
         $path = 'imports/test-'.uniqid().'/source.pdf';
 
         Storage::disk('local')->put(
             $path,
-            file_get_contents(base_path('tests/Fixtures/tiny-dictionary.pdf'))
+            file_get_contents(base_path('tests/Fixtures/'.$fixture))
         );
 
         return DictionaryImport::query()->create([
             'user_id' => $this->admin()->id,
             'language_id' => $language->id,
-            'original_name' => 'tiny-dictionary.pdf',
+            'original_name' => $fixture,
             'disk' => 'local',
             'path' => $path,
             'mime_type' => 'application/pdf',
-            'size' => 844,
+            'size' => filesize(base_path('tests/Fixtures/'.$fixture)),
             'status' => DictionaryImport::STATUS_UPLOADED,
         ]);
     }

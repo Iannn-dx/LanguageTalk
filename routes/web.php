@@ -14,9 +14,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         return Inertia::render('admin/dashboard');
     })->name('admin.dashboard');
 
-    Route::get('/dictionary', function () {
-        return Inertia::render('admin/Dictionary/index');
-    })->name('dictionary');
+    Route::get('/dictionary', [DictionaryImportController::class, 'index'])->name('dictionary');
 
     Route::get('/import_dictionary', function () {
         return Inertia::render('import_dictionary');

@@ -44,6 +44,12 @@ final class PdfImportService
 
         $parsed = $this->parser->parse($extracted['pageTexts'], $maxEntries);
 
+        if ($parsed['entries'] === []) {
+            throw new \RuntimeException(
+                'No dictionary entries could be extracted from this PDF. It may use an unsupported layout.'
+            );
+        }
+
         return [
             'pages' => $extracted['pages'],
             'entries' => $parsed['entries'],
